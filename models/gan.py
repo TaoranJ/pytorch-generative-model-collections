@@ -1,73 +1,97 @@
-import utils, torch, time, os, pickle
+# =============================================================================
+# =============================== Description =================================
+# =============================================================================
+
+"""GAN paper proposed the GAN idea instead of a specific architecture to solve
+some specific problems. So here we used the architecture in the InfoGAN
+paper."""
+
+# =============================================================================
+# ================================== Import ===================================
+# =============================================================================
+import os
+import time
+import utils
+import torch
+import pickle
 import numpy as np
 import torch.nn as nn
 import torch.optim as optim
 from dataloader import dataloader
 
-class generator(nn.Module):
-    # Network Architecture is exactly same as in infoGAN (https://arxiv.org/abs/1606.03657)
-    # Architecture : FC1024_BR-FC7x7x128_BR-(64)4dc2s_BR-(1)4dc2s_S
-    def __init__(self, input_dim=100, output_dim=1, input_size=32):
-        super(generator, self).__init__()
-        self.input_dim = input_dim
-        self.output_dim = output_dim
-        self.input_size = input_size
 
-        self.fc = nn.Sequential(
-            nn.Linear(self.input_dim, 1024),
-            nn.BatchNorm1d(1024),
-            nn.ReLU(),
-            nn.Linear(1024, 128 * (self.input_size // 4) * (self.input_size // 4)),
-            nn.BatchNorm1d(128 * (self.input_size // 4) * (self.input_size // 4)),
-            nn.ReLU(),
-        )
-        self.deconv = nn.Sequential(
-            nn.ConvTranspose2d(128, 64, 4, 2, 1),
-            nn.BatchNorm2d(64),
-            nn.ReLU(),
-            nn.ConvTranspose2d(64, self.output_dim, 4, 2, 1),
-            nn.Tanh(),
-        )
-        utils.initialize_weights(self)
+class Generator(nn.Module):
+    """InfoGAN generator."""
+    def __init__(self, z_dim, img_channels, dataset='mnist'):
+        super(Generator, self).__init__()
 
-    def forward(self, input):
-        x = self.fc(input)
-        x = x.view(-1, 128, (self.input_size // 4), (self.input_size // 4))
-        x = self.deconv(x)
+        if dataset == 'mnist':
+            # fc 1: (batch_size, z_dim -> 1024)
+            self.fc1 = nn.Sequential(
+                    nn.Linear(z_dim, 1024),
+                    nn.BatchNorm1d(1024),
+                    nn.ReLU())
+            # fc 2: (batch_size, 1024 -> 7 * 7 * 128)
+            self.fc2 = nn.Sequential(
+                    nn.Linear(1024, 7 * 7 * 128),
+                    nn.BatchNorm1d(7 * 7 * 128),
+                    nn.ReLU())
+            # un-conv 1: (batch_size, 128 -> 64, 7 -> 14, 7 -> 14)
+            self.dconv1 = nn.Sequential(
+                    nn.ConvTranspose2d(in_channels=128, out_channels=64,
+                                       kernel_size=[4, 4], stride=2,
+                                       padding=1),
+                    nn.BatchNorm2d(64),
+                    nn.ReLU())
+            # un-conv 2: (batch_size, 128 -> 1, 14 -> 28, 14 -> 28)
+            self.dconv2 = nn.ConvTranspose2d(in_channels=64,
+                                             out_channels=img_channels,
+                                             kernel_size=[4, 4], stride=2,
+                                             padding=1)
 
+    def forward(self, x):
+        x = self.fc1(x)
+        x = self.fc2(x)
+        x = x.view(x.size(0), 128, 7, 7)
+        x = self.dconv1(x)
+        x = self.dconv2(x)
         return x
 
-class discriminator(nn.Module):
-    # Network Architecture is exactly same as in infoGAN (https://arxiv.org/abs/1606.03657)
-    # Architecture : (64)4c2s-(128)4c2s_BL-FC1024_BL-FC1_S
-    def __init__(self, input_dim=1, output_dim=1, input_size=32):
-        super(discriminator, self).__init__()
-        self.input_dim = input_dim
-        self.output_dim = output_dim
-        self.input_size = input_size
 
-        self.conv = nn.Sequential(
-            nn.Conv2d(self.input_dim, 64, 4, 2, 1),
-            nn.LeakyReLU(0.2),
-            nn.Conv2d(64, 128, 4, 2, 1),
-            nn.BatchNorm2d(128),
-            nn.LeakyReLU(0.2),
-        )
-        self.fc = nn.Sequential(
-            nn.Linear(128 * (self.input_size // 4) * (self.input_size // 4), 1024),
-            nn.BatchNorm1d(1024),
-            nn.LeakyReLU(0.2),
-            nn.Linear(1024, self.output_dim),
-            nn.Sigmoid(),
-        )
-        utils.initialize_weights(self)
+class Discriminator(nn.Module):
+    """InfoGAN's discriminator"""
+    def __init__(self, img_channels, output_dim, dataset='mnist'):
+        super(Discriminator, self).__init__()
 
-    def forward(self, input):
-        x = self.conv(input)
-        x = x.view(-1, 128 * (self.input_size // 4) * (self.input_size // 4))
-        x = self.fc(x)
+        if dataset == 'mnist':
+            # conv1 (batch_size, 1 -> 64, 28 -> 14, 28 -> 14)
+            self.conv1 = nn.Sequential(
+                    nn.Conv2d(in_channels=img_channels, out_channels=64,
+                              kernel_size=[4, 4], stride=2, padding=1),
+                    nn.LeakyReLU(0.2))
+            # conv2 (batch_size, 64 -> 128, 14 -> 7, 14 -> 7)
+            self.conv2 = nn.Sequential(
+                    nn.Conv2d(in_channels=64, out_channels=128,
+                              kernel_size=[4, 4], stride=2, padding=1),
+                    nn.BatchNorm2d(128),
+                    nn.LeakyReLU(0.2))
+            # fc1 (batch_size, 128 * 7 * 7) -> (batch_size, 1024)
+            self.fc1 = nn.Sequential(
+                    nn.Linear(128 * 7 * 7, 1024),
+                    nn.BatchNorm1d(1024),
+                    nn.LeakyReLU(0.2))
+            # fc2 (batch_size, 1024) -> (batch_size, 1)
+            self.fc2 = nn.Sequential(
+                    nn.Linear(1024, output_dim),
+                    nn.Sigmoid())
 
+    def forward(self, x):
+        x = self.conv1(x)
+        x = self.conv2(x)
+        x = self.fc1(torch.flatten(x, start_dim=1))
+        x = self.fc2(x)
         return x
+
 
 class GAN(object):
     def __init__(self, args):
@@ -85,14 +109,19 @@ class GAN(object):
         self.z_dim = 62
 
         # load dataset
-        self.data_loader = dataloader(self.dataset, self.input_size, self.batch_size)
+        self.data_loader = dataloader(self.dataset, self.input_size,
+                                      self.batch_size)
         data = self.data_loader.__iter__().__next__()[0]
 
         # networks init
-        self.G = generator(input_dim=self.z_dim, output_dim=data.shape[1], input_size=self.input_size)
-        self.D = discriminator(input_dim=data.shape[1], output_dim=1, input_size=self.input_size)
-        self.G_optimizer = optim.Adam(self.G.parameters(), lr=args.lrG, betas=(args.beta1, args.beta2))
-        self.D_optimizer = optim.Adam(self.D.parameters(), lr=args.lrD, betas=(args.beta1, args.beta2))
+        self.G = Generator(input_dim=self.z_dim, output_dim=data.shape[1],
+                           input_size=self.input_size)
+        self.D = Discriminator(input_dim=data.shape[1], output_dim=1,
+                               input_size=self.input_size)
+        self.G_optimizer = optim.Adam(self.G.parameters(), lr=args.lrG,
+                                      betas=(args.beta1, args.beta2))
+        self.D_optimizer = optim.Adam(self.D.parameters(), lr=args.lrD,
+                                      betas=(args.beta1, args.beta2))
 
         if self.gpu_mode:
             self.G.cuda()
@@ -106,12 +135,10 @@ class GAN(object):
         utils.print_network(self.D)
         print('-----------------------------------------------')
 
-
         # fixed noise
         self.sample_z_ = torch.rand((self.batch_size, self.z_dim))
         if self.gpu_mode:
             self.sample_z_ = self.sample_z_.cuda()
-
 
     def train(self):
         self.train_hist = {}
@@ -120,9 +147,11 @@ class GAN(object):
         self.train_hist['per_epoch_time'] = []
         self.train_hist['total_time'] = []
 
-        self.y_real_, self.y_fake_ = torch.ones(self.batch_size, 1), torch.zeros(self.batch_size, 1)
+        self.y_real_ = torch.ones(self.batch_size, 1)
+        self.y_fake_ = torch.zeros(self.batch_size, 1)
         if self.gpu_mode:
-            self.y_real_, self.y_fake_ = self.y_real_.cuda(), self.y_fake_.cuda()
+            self.y_real_ = self.y_real_.cuda()
+            self.y_fake_ = self.y_fake_.cuda()
 
         self.D.train()
         print('training start!!')
@@ -167,7 +196,8 @@ class GAN(object):
 
                 if ((iter + 1) % 100) == 0:
                     print("Epoch: [%2d] [%4d/%4d] D_loss: %.8f, G_loss: %.8f" %
-                          ((epoch + 1), (iter + 1), self.data_loader.dataset.__len__() // self.batch_size, D_loss.item(), G_loss.item()))
+                          ((epoch + 1), (iter + 1),
+                           self.data_loader.dataset.__len__() // self.batch_size, D_loss.item(), G_loss.item()))
 
             self.train_hist['per_epoch_time'].append(time.time() - epoch_start_time)
             with torch.no_grad():
