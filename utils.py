@@ -25,12 +25,20 @@ def generate_animation(name, imgs):
     imageio.mimsave(name + '.gif', imgs, fps=2)
 
 
-def loss_monitor(hist, name):
-    """Draw loss vs. steps figure."""
-    x = range(len(hist['D_loss']))
+def loss_monitor(per_batch_loss, name):
+    """Draw loss vs. steps figure.
 
-    y1 = hist['D_loss']
-    y2 = hist['G_loss']
+    per_batch_loss : :class:`collections.defaultdict`
+        Record of loss per batch.
+
+    name : str
+        Figure name.
+
+    """
+    x = range(len(per_batch_loss['D_loss']))
+
+    y1 = per_batch_loss['D_loss']
+    y2 = per_batch_loss['G_loss']
 
     plt.plot(x, y1, label='D_loss')
     plt.plot(x, y2, label='G_loss')
@@ -38,7 +46,7 @@ def loss_monitor(hist, name):
     plt.xlabel('Steps')
     plt.ylabel('Loss')
 
-    plt.legend(loc=4)
+    plt.legend(loc=2)
     plt.grid(True)
     plt.tight_layout()
 
@@ -48,7 +56,6 @@ def loss_monitor(hist, name):
 
 def concat_images(images, row_length):
     """Contact one batch of generated results in one image.
-
 
     Parameters
     ----------
