@@ -202,5 +202,12 @@ build/
 # ipynb_checkpoints
 .ipynb_checkpoints/
 
-*.pkl
+# ignore figures
+*.png
+*.gif
+
+# ignore dataset
 data/
+
+# ignore saved models
+*.pkl
