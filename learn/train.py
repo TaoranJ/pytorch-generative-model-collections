@@ -108,6 +108,6 @@ def train(D, G, D_optimizer, G_optimizer, train_set, args):
     torch.save(G.state_dict(), 'G.pkl')
     torch.save(D.state_dict(), 'D.pkl')
     generate_animation('generator_result_animation', vis_imgs)
-    loss_monitor(per_batch_loss, 'steps_vs_loss.png')
+    loss_monitor(per_batch_loss, 'loss_vs_steps.png')
 
     return D, G

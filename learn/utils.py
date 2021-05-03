@@ -22,7 +22,7 @@ def generate_animation(name, imgs):
 
     """
 
-    imageio.mimsave(name + '.gif', imgs, fps=2)
+    imageio.mimwrite(name + '.gif', imgs, duration=0.5, loop=1)
 
 
 def loss_monitor(per_batch_loss, name):
@@ -35,6 +35,7 @@ def loss_monitor(per_batch_loss, name):
         Figure name.
 
     """
+
     x = range(len(per_batch_loss['D_loss']))
 
     y1 = per_batch_loss['D_loss']
@@ -64,19 +65,23 @@ def concat_images(images, row_length):
     row_length : int
         # of images per row.
 
+    Returns
+    -------
+    img : :class:`numpy.array`
+        An image tensor of shape (h * batch_size, w * batch_size, channels) or
+        (h * batch_size, w * batch_size) if channles = 1.
+
     """
 
     num_pics, c, h, w = images.shape
     column_length = num_pics // row_length
+    img = np.zeros((c, h * column_length, w * row_length), dtype=np.uint8)
+    for idx, image in enumerate(images):
+        row_idx, column_idx = idx // row_length, idx % row_length
+        bottom, left = row_idx * h, column_idx * w
+        for c_ in range(image.shape[0]):
+            img[c_, bottom: bottom + h, left: left + w] = image[c_, :, :]
+    img = img.transpose(1, 2, 0)
     if c == 1:
-        img = np.zeros((h * column_length, w * row_length), dtype=np.uint8)
-        for idx, image in enumerate(images):
-            row_idx, column_idx = idx // row_length, idx % row_length
-            bottom, left = row_idx * h, column_idx * w
-            img[bottom: bottom + h, left: left + w] = image[0, :, :]
-        return img
-    elif c in [3, 4]:
-        pass
-    else:
-        raise ValueError('in merge(images,size) images parameter ''must have '
-                         'dimensions: HxW or HxWx3 or HxWx4')
+        img = np.squeeze(img, -1)
+    return img

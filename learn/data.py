@@ -1,6 +1,7 @@
 # =============================================================================
 # ================================== Import ===================================
 # =============================================================================
+import os
 import torchvision as thv
 from torchvision import transforms
 from torch.utils.data import DataLoader
@@ -55,7 +56,8 @@ def dataloader(batch_size, dataset_name, datapath='data'):
                 batch_size=batch_size, shuffle=True, drop_last=True)
     elif dataset_name == 'svhn':  # object (numbers) recognition, 3 channels
         tr_set = DataLoader(
-                thv.datasets.SVHN(datapath, split='train', download=True,
+                thv.datasets.SVHN(os.path.join(datapath, 'SVHN'),
+                                  split='train', download=True,
                                   transform=transform3c),
                 batch_size=batch_size, shuffle=True, drop_last=True)
         te_set = DataLoader(
