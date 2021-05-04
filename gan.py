@@ -37,6 +37,10 @@ def parse_args():
     pparser.add_argument('--batch-size', type=int, default=64,
                          help='Minibatch size')
     pparser.add_argument('--epochs', type=int, default=50, help='Epochs')
+    pparser.add_argument('--d-steps', type=int, default=1,
+                         help='Train discriminator d steps every time.')
+    pparser.add_argument('--g-steps', type=int, default=1,
+                         help='Train generator g steps every time.')
     # dataset settings
     pparser.add_argument('--dataset', type=str, default='mnist',
                          choices=['mnist', 'fashion-mnist', 'svhn', 'celeba',
@@ -44,6 +48,7 @@ def parse_args():
     args = pparser.parse_args()
     args.device = 'cuda:{}'.format(args.cuda) \
         if torch.cuda.is_available() else 'cpu'
+    print(args)
     return args
 
 
