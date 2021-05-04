@@ -211,3 +211,4 @@ data/
 
 # ignore saved models
 *.pkl
+*.pt
