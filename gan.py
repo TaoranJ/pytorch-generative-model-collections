@@ -2,9 +2,9 @@
 # ================================== Import ===================================
 # =============================================================================
 import torch.optim as optim
+from learn.data import dataloader
 from learn.train import train_gan
 from learn.utils import parse_args
-from learn.data import dataloader
 from models.generator import G_InfoGan_1C28, G_InfoGan_3C32
 from models.discriminator import D_InfoGan_1C28, D_InfoGan_3C32
 
@@ -17,7 +17,7 @@ def main(args):
 
     Parameters
     ----------
-    args :
+    args : :class:`argparse.Namespace`
         Command line arguments.
 
     """
