@@ -97,7 +97,7 @@ def train_gan(D, G, D_optimizer, G_optimizer, train_set, args):
         vis_imgs.append(generator_vis(G, fixed_z))
 
     torch.save({'generator': G.state_dict(),
-                'discriminator': D.state_dict}, 'model.pt')
+                'discriminator': D.state_dict}, args.model_name + '.pt')
     generate_animation('generator_result_animation', vis_imgs, args)
     loss_monitor(per_batch_loss, 'loss_vs_steps.png', args)
     loss_monitor(per_epoch_loss, 'loss_vs_epochs.png', args)
@@ -198,7 +198,7 @@ def train_cgan(D, G, D_optimizer, G_optimizer, train_set, args):
         vis_imgs.append(generator_vis(G, fixed_z, fixed_c))
 
     torch.save({'generator': G.state_dict(),
-                'discriminator': D.state_dict}, args.name + '.pt')
+                'discriminator': D.state_dict}, args.model_name + '.pt')
     generate_animation('generator_result_animation', vis_imgs, args)
     loss_monitor(per_batch_loss, 'loss_vs_steps.png', args)
     loss_monitor(per_epoch_loss, 'loss_vs_epochs.png', args)
