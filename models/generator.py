@@ -102,12 +102,13 @@ class G_InfoGan_CGAN_1C28(G_InfoGan_1C28):
 
         Returns
         -------
-        x : :class:`torch.Tensor`
+        x_ : :class:`torch.Tensor`
             Generated figures, a tensor of shape (batch_size, 1, 28, 28).
 
         """
 
-        x_ = torch.cat([x, c], 1)  # concat on z_dim
+        # (batch_size, z_dim + c_dim)
+        x_ = torch.cat([x, c], 1)
         x_ = super().forward(x_)
         return x_
 

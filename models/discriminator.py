@@ -67,7 +67,8 @@ class D_InfoGan_1C28(nn.Module):
 
 
 class D_InfoGan_CGAN_1C28(D_InfoGan_1C28):
-    """A CGAN compatible discriminator.
+    """A CGAN compatible discriminator. Concat condition information before the
+    first layer.
 
     Parameters
     ----------
@@ -100,13 +101,13 @@ class D_InfoGan_CGAN_1C28(D_InfoGan_1C28):
 
         Returns
         -------
-        x : :class:`torch.Tensor`
+        x_ : :class:`torch.Tensor`
             Real/fake tensor of shape (batch_size, 1).
 
         """
 
         # (batch_size, in_channels + c_dim, h, w)
-        x_ = torch.cat([x, c], 1)  # concat on in_channels
+        x_ = torch.cat([x, c], 1)
         x_ = super().forward(x_)
         return x_
 
