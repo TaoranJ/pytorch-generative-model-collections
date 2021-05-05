@@ -136,6 +136,7 @@ def train_cgan(D, G, D_optimizer, G_optimizer, train_set, args):
     fixed_z = torch.rand(args.batch_size, args.z_dim).to(args.device)
     fixed_c = torch.randint(low=0, high=args.c_dim - 1,
                             size=(args.batch_size, 1))
+    print(fixed_c.squeeze(-1))
     fixed_c = torch.zeros(args.batch_size, args.c_dim).scatter_(
             1, fixed_c, 1).to(args.device)
     # labels for real/fake images
@@ -197,7 +198,7 @@ def train_cgan(D, G, D_optimizer, G_optimizer, train_set, args):
         vis_imgs.append(generator_vis(G, fixed_z, fixed_c))
 
     torch.save({'generator': G.state_dict(),
-                'discriminator': D.state_dict}, 'model.pt')
+                'discriminator': D.state_dict}, args.name + '.pt')
     generate_animation('generator_result_animation', vis_imgs, args)
     loss_monitor(per_batch_loss, 'loss_vs_steps.png', args)
     loss_monitor(per_epoch_loss, 'loss_vs_epochs.png', args)
