@@ -41,9 +41,9 @@ def concat_images(images, imgs_per_row):
     """
 
     num_pics, c, h, w = images.shape
-    column_length = int(np.ceil(num_pics / imgs_per_row))
+    imgs_per_column = int(np.ceil(num_pics / imgs_per_row))
     # img = np.zeros((c, h * column_length, w * imgs_per_row), dtype=np.uint8)
-    img = np.zeros((c, h * column_length, w * imgs_per_row))
+    img = np.zeros((c, h * imgs_per_column, w * imgs_per_row))
     for idx, image in enumerate(images):
         r_idx, c_idx = idx // imgs_per_row, idx % imgs_per_row
         top, left = r_idx * h, c_idx * w
