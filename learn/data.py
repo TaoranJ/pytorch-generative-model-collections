@@ -61,8 +61,8 @@ def dataloader(batch_size, dataset_name, datapath='data'):
                                   transform=transform3c),
                 batch_size=batch_size, shuffle=True, drop_last=True)
         te_set = DataLoader(
-                thv.datasets.SVHN(datapath, split='test', download=True,
-                                  transform=transform3c),
+                thv.datasets.SVHN(os.path.join(datapath, 'SVHN'), split='test',
+                                  download=True, transform=transform3c),
                 batch_size=batch_size, shuffle=True, drop_last=True)
     elif dataset_name == 'celeba':  # celebrity face, 3 channel
         tr_set = DataLoader(
