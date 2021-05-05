@@ -6,9 +6,9 @@ import torch.nn as nn
 
 
 # =============================================================================
-# ============================== Discriminators ===============================
+# ================ Discriminator for 1 channel 28 x 28 images =================
 # =============================================================================
-class InfoGan1C28D(nn.Module):
+class D_InfoGan_1C28(nn.Module):
     """Discriminator used in InfoGan paper for MNIST dataset. Can be also
     applied to Fashion-MNIST dataset.
 
@@ -21,7 +21,7 @@ class InfoGan1C28D(nn.Module):
 
     """
     def __init__(self, img_channels, output_dim):
-        super(InfoGan1C28D, self).__init__()
+        super(D_InfoGan_1C28, self).__init__()
 
         # conv1 (batch_size, 1 -> 64, 28 -> 14, 28 -> 14)
         self.conv1 = nn.Sequential(
@@ -66,7 +66,52 @@ class InfoGan1C28D(nn.Module):
         return x
 
 
-class InfoGan3C32D(nn.Module):
+class D_InfoGan_CGAN_1C28(D_InfoGan_1C28):
+    """A CGAN compatible discriminator.
+
+    Parameters
+    ----------
+    img_channels : int
+        Channels of the input images.
+    output_dim : int
+        Dimension of the output.
+    c_dim : int
+        Condition dimension.
+
+    """
+    def __init__(self, img_channels, output_dim, c_dim):
+        super(D_InfoGan_CGAN_1C28, self).__init__(img_channels, output_dim)
+
+        # conv1 (batch_size, img_channels + c_dim -> 64, 28 -> 14, 28 -> 14)
+        self.conv1 = nn.Sequential(
+                nn.Conv2d(in_channels=img_channels + c_dim, out_channels=64,
+                          kernel_size=[4, 4], stride=2, padding=1),
+                nn.LeakyReLU(0.2))
+
+    def forward(self, x, c):
+        """Forward propagation.
+
+        Parameters
+        ----------
+        x : :class:`torch.Tensor`
+            Images, a tensor of shape (batch_size, 1, 28, 28).
+        c : :class:`torch.Tensor`
+            Condition input, a tensor of shape (batch_size, 1, 28, 28).
+
+        Returns
+        -------
+        x : :class:`torch.Tensor`
+            Real/fake tensor of shape (batch_size, 1).
+
+        """
+
+        # (batch_size, in_channels + c_dim, h, w)
+        x_ = torch.cat([x, c], 1)  # concat on in_channels
+        x_ = super().forward(x_)
+        return x_
+
+
+class D_InfoGan_3C32(nn.Module):
     """Discriminator used in InfoGan paper for SVHN dataset.
 
     Parameters
@@ -78,7 +123,7 @@ class InfoGan3C32D(nn.Module):
 
     """
     def __init__(self, img_channels, output_dim):
-        super(InfoGan3C32D, self).__init__()
+        super(D_InfoGan_3C32, self).__init__()
 
         # conv1 (batch_size, 3 -> 64, 32 -> 16, 32 -> 16)
         self.conv1 = nn.Sequential(
@@ -128,3 +173,26 @@ class InfoGan3C32D(nn.Module):
         x = self.fc1(torch.flatten(x, start_dim=1))
         x = self.fc2(x)
         return x
+
+
+class D_InfoGan_CGAN_3C32(D_InfoGan_3C32):
+    """A CGAN compatible discriminator.
+
+    Parameters
+    ----------
+    img_channels : int
+        Channels of the input images.
+    output_dim : int
+        Dimension of the output.
+    c_dim : int
+        Condition dimension.
+
+    """
+    def __init__(self, img_channels, output_dim, c_dim):
+        super(D_InfoGan_CGAN_3C32, self).__init__(img_channels, output_dim)
+
+        # conv1 (batch_size, img_channels + c_dim -> 64, 28 -> 14, 28 -> 14)
+        self.conv1 = nn.Sequential(
+                nn.Conv2d(in_channels=img_channels + c_dim, out_channels=64,
+                          kernel_size=[4, 4], stride=2, padding=1),
+                nn.LeakyReLU(0.2))
