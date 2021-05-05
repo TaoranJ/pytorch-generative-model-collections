@@ -5,8 +5,8 @@ import torch.optim as optim
 from learn.data import dataloader
 from learn.train import train_cgan
 from learn.utils import parse_args
-from models.generator import G_InfoGan_CGAN_1C28
-from models.discriminator import D_InfoGan_CGAN_1C28
+from models.generator import G_InfoGan_CGAN_1C28, G_InfoGan_CGAN_3C32
+from models.discriminator import D_InfoGan_CGAN_1C28, D_InfoGan_CGAN_3C32
 
 
 # =============================================================================
@@ -28,8 +28,12 @@ def main(args):
                 args.device)
         D = D_InfoGan_CGAN_1C28(img_channels=1, output_dim=1,
                                 c_dim=args.c_dim).to(args.device)
-    elif args.dataset in ['svhn', 'celeba']:
-        pass
+    elif args.dataset in ['svhn', 'celeba', 'cifar10']:
+        G = G_InfoGan_CGAN_3C32(z_dim=args.z_dim, img_channels=3,
+                                c_dim=args.c_dim).to(
+                args.device)
+        D = D_InfoGan_CGAN_3C32(img_channels=3, output_dim=1,
+                                c_dim=args.c_dim).to(args.device)
     D_optimizer = optim.Adam(D.parameters(), lr=args.lr_d,
                              betas=(args.beta1, args.beta2))
     G_optimizer = optim.Adam(G.parameters(), lr=args.lr_g,

@@ -113,6 +113,9 @@ class G_InfoGan_CGAN_1C28(G_InfoGan_1C28):
         return x_
 
 
+# =============================================================================
+# ================= Generator for 3 channels 32 x 32 images ===================
+# =============================================================================
 class G_InfoGan_3C32(nn.Module):
     """Generator used in InfoGAN paper for SVHN dataset.
 
@@ -201,3 +204,23 @@ class G_InfoGan_CGAN_3C32(G_InfoGan_3C32):
                 nn.Linear(z_dim + c_dim, 2 * 2 * 448),
                 nn.BatchNorm1d(2 * 2 * 448),
                 nn.ReLU())
+
+    def forward(self, x, c):
+        """Forward propagation.
+
+        Parameters
+        ----------
+        x : :class:`torch.Tensor`
+            Sampled noise, a tensor of shape (batch_size, z_dim).
+
+        Returns
+        -------
+        x_ : :class:`torch.Tensor`
+            Generated images, a tensor of shape (batch_size, 3, 32, 32).
+
+        """
+
+        # (batch_size, z_dim + c_dim)
+        x_ = torch.cat([x, c], 1)
+        x_ = super().forward(x_)
+        return x_

@@ -112,6 +112,9 @@ class D_InfoGan_CGAN_1C28(D_InfoGan_1C28):
         return x_
 
 
+# =============================================================================
+# ================ Discriminator for 3 channel 32 x 32 images =================
+# =============================================================================
 class D_InfoGan_3C32(nn.Module):
     """Discriminator used in InfoGan paper for SVHN dataset.
 
@@ -197,3 +200,25 @@ class D_InfoGan_CGAN_3C32(D_InfoGan_3C32):
                 nn.Conv2d(in_channels=img_channels + c_dim, out_channels=64,
                           kernel_size=[4, 4], stride=2, padding=1),
                 nn.LeakyReLU(0.2))
+
+    def forward(self, x, c):
+        """Forward propagation.
+
+        Parameters
+        ----------
+        x : :class:`torch.Tensor`
+            Images, a tensor of shape (batch_size, 3, 32, 32).
+        c : :class:`torch.Tensor`
+            Condition input, a tensor of shape (batch_size, 3, 32, 32).
+
+        Returns
+        -------
+        x_ : :class:`torch.Tensor`
+            Real/fake tensor of shape (batch_size, 1).
+
+        """
+
+        # (batch_size, in_channels + c_dim, h, w)
+        x_ = torch.cat([x, c], 1)
+        x_ = super().forward(x_)
+        return x_

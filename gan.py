@@ -25,7 +25,7 @@ def main(args):
     if args.dataset in ['mnist', 'fashion-mnist']:
         G = G_InfoGan_1C28(z_dim=args.z_dim, img_channels=1).to(args.device)
         D = D_InfoGan_1C28(img_channels=1, output_dim=1).to(args.device)
-    elif args.dataset in ['svhn', 'celeba']:
+    elif args.dataset in ['svhn', 'celeba', 'cifar10']:
         G = G_InfoGan_3C32(z_dim=args.z_dim, img_channels=3).to(args.device)
         D = D_InfoGan_3C32(img_channels=3, output_dim=1).to(args.device)
     D_optimizer = optim.Adam(D.parameters(), lr=args.lr_d,
