@@ -58,30 +58,33 @@ def concat_images(images, imgs_per_row):
     return img
 
 
-def generate_animation(name, imgs):
+def generate_animation(name, imgs, args):
     """Animation for generative models.
 
     Parameters
     ----------
     name : str
         Name for the .gif animation.
-
     imgs : int
         Collections of imgs.
+    args : :class:`argparse.Namespace`
+        Argument parser.
 
     """
 
-    imageio.mimwrite(name + '.gif', imgs, duration=0.5, loop=1)
+    imageio.mimwrite('_'.join([args.model_name, name + '.gif']), imgs,
+                     duration=0.5, loop=1)
 
 
-def loss_monitor(per_batch_loss, name):
+def loss_monitor(per_batch_loss, name, args):
     """Draw loss vs. steps figure.
 
     per_batch_loss : :class:`collections.defaultdict`
         Record of loss per batch.
-
     name : str
         Figure name.
+    args : :class:`argparse.Namespace`
+        Argument parser.
 
     """
 
@@ -100,7 +103,7 @@ def loss_monitor(per_batch_loss, name):
     plt.grid(True)
     plt.tight_layout()
 
-    plt.savefig(name)
+    plt.savefig('_'.join([args.model_name, name]))
     plt.close()
 
 
