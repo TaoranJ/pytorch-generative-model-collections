@@ -1,57 +1,17 @@
 # =============================================================================
 # ================================== Import ===================================
 # =============================================================================
-import torch
-import argparse
 import torch.optim as optim
-from learn.train import train
+from learn.train import train_gan
+from learn.utils import parse_args
 from learn.data import dataloader
-from models.generator import InfoGan1C28G, InfoGan3C32G
-from models.discriminator import InfoGan1C28D, InfoGan3C32D
+from models.generator import G_InfoGan_1C28, G_InfoGan_3C32
+from models.discriminator import D_InfoGan_1C28, D_InfoGan_3C32
 
 
 # =============================================================================
 # =============================== Entry Point =================================
 # =============================================================================
-def parse_args():
-    """Parse command line arguments.
-
-    Returns
-    -------
-    args : :class:`argparse.Namespace`
-        Command line arguments.
-
-    """
-
-    pparser = argparse.ArgumentParser()
-    # device configuration
-    pparser.add_argument('--cuda', type=int, default=0,
-                         help='Which cuda to use.')
-    # model settings
-    pparser.add_argument('--z-dim', type=int, default=64, help='Noise dim.')
-    # optimization settings
-    pparser.add_argument('--lr-d', type=float, default=2e-4,
-                         help='Discriminator learning rate.')
-    pparser.add_argument('--lr-g', type=float, default=1e-3,
-                         help='Generator learning rate.')
-    pparser.add_argument('--batch-size', type=int, default=64,
-                         help='Minibatch size')
-    pparser.add_argument('--epochs', type=int, default=50, help='Epochs')
-    pparser.add_argument('--d-steps', type=int, default=1,
-                         help='Train discriminator d steps every time.')
-    pparser.add_argument('--g-steps', type=int, default=1,
-                         help='Train generator g steps every time.')
-    # dataset settings
-    pparser.add_argument('--dataset', type=str, default='mnist',
-                         choices=['mnist', 'fashion-mnist', 'svhn', 'celeba',
-                                  'cifar10', 'stl10'], help='Dataset to use.')
-    args = pparser.parse_args()
-    args.device = 'cuda:{}'.format(args.cuda) \
-        if torch.cuda.is_available() else 'cpu'
-    print(args)
-    return args
-
-
 def main(args):
     """Train/evaluate discriminator and generators.
 
@@ -63,16 +23,20 @@ def main(args):
     """
 
     if args.dataset in ['mnist', 'fashion-mnist']:
-        G = InfoGan1C28G(z_dim=args.z_dim, img_channels=1).to(args.device)
-        D = InfoGan1C28D(img_channels=1, output_dim=1).to(args.device)
+        G = G_InfoGan_1C28(z_dim=args.z_dim, img_channels=1).to(args.device)
+        D = D_InfoGan_1C28(img_channels=1, output_dim=1).to(args.device)
     elif args.dataset in ['svhn', 'celeba']:
-        G = InfoGan3C32G(z_dim=args.z_dim, img_channels=3).to(args.device)
-        D = InfoGan3C32D(img_channels=3, output_dim=1).to(args.device)
-    D_optimizer = optim.Adam(D.parameters(), lr=args.lr_d)
-    G_optimizer = optim.Adam(G.parameters(), lr=args.lr_g)
+        G = G_InfoGan_3C32(z_dim=args.z_dim, img_channels=3).to(args.device)
+        D = D_InfoGan_3C32(img_channels=3, output_dim=1).to(args.device)
+    D_optimizer = optim.Adam(D.parameters(), lr=args.lr_d,
+                             betas=(args.beta1, args.beta2))
+    G_optimizer = optim.Adam(G.parameters(), lr=args.lr_g,
+                             betas=(args.beta1, args.beta2))
     tr_set, _ = dataloader(args.batch_size, args.dataset)
-    train(D, G, D_optimizer, G_optimizer, tr_set, args)
+    train_gan(D, G, D_optimizer, G_optimizer, tr_set, args)
 
 
 if __name__ == "__main__":
-    main(parse_args())
+    args = parse_args()
+    args.model_name = 'GAN'
+    main(args)
