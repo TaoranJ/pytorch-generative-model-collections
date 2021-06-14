@@ -17,8 +17,8 @@ from learn.settings import ArgParserDCGAN
 # =============================== Entry Point =================================
 # =============================================================================
 def main(args):
-    random.seed(args.manual_seed)
-    torch.manual_seed(args.manual_seed)
+    random.seed(args.random_seed)
+    torch.manual_seed(args.random_seed)
     cudnn.benchmark = True
     tr_set, te_set = dataloader(args.batch_size, args.dataset, args)
     D = D_DCGAN(img_channels=args.in_channels, feature_map_dim=args.d_fm_dim,

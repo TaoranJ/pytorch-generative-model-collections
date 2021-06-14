@@ -65,7 +65,8 @@ class GeneralArgParser(object):
         self.parser.add_argument('--classes', default='bedroom',
                                  help='Comma separated list of classes for '
                                       'the LSUN')
-        self.parser.add_argument('--manual_seed', type=int, help='Manual seed')
+        self.parser.add_argument('--random-seed', type=int,
+                                 help='Random seed for reproducibility.')
         self.parser.add_argument('--img-size', type=int, default=64,
                                  help='The height / width of the input image.')
         self.parser.add_argument('--img-resize', action='store_true',
@@ -101,12 +102,9 @@ class GeneralArgParser(object):
             os.makedirs(args.eval_dir)
         except OSError:
             pass
-        if args.manual_seed is None:
-            args.manual_seed = random.randint(1, 10000)
+        if args.random_seed is None:
+            args.random_seed = random.randint(1, 10000)
         return args
-
-        # pparser.add_argument('--dry-run', action='store_true',
-        #                      help='check a single training cycle works')
 
 
 class ArgParserCGAN(GeneralArgParser):
@@ -178,6 +176,6 @@ class ArgParserDCGAN(GeneralArgParser):
             os.makedirs(args.eval_dir)
         except OSError:
             pass
-        if args.manual_seed is None:
-            args.manual_seed = random.randint(1, 10000)
+        if args.random_seed is None:
+            args.random_seed = random.randint(1, 10000)
         return args
