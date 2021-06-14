@@ -5,6 +5,58 @@ import torch
 import torch.nn as nn
 
 
+class G_DCGAN(nn.Module):
+    """Generator for the DCGAN.
+
+    Parameters
+    ----------
+    latent_dim : int
+        Length of latent vector.
+    feature_map_dim: int
+        Size of feature map in generator.
+    """
+    def __init__(self, latent_dim, feature_map_dim, img_channels, ngpu):
+        super(G_DCGAN, self).__init__()
+        self.ngpu = ngpu
+        self.main = nn.Sequential(
+            # input is Z, going into a convolution
+            nn.ConvTranspose2d(latent_dim, feature_map_dim * 8, 4, 1, 0,
+                               bias=False),
+            nn.BatchNorm2d(feature_map_dim * 8),
+            nn.ReLU(True),
+            # state size. (feature_map_dim * 8) x 4 x 4
+            nn.ConvTranspose2d(feature_map_dim * 8, feature_map_dim * 4, 4, 2,
+                               1, bias=False),
+            nn.BatchNorm2d(feature_map_dim * 4),
+            nn.ReLU(True),
+            # state size. (ngf*4) x 8 x 8
+            nn.ConvTranspose2d(feature_map_dim * 4, feature_map_dim * 2, 4, 2,
+                               1, bias=False),
+            nn.BatchNorm2d(feature_map_dim * 2),
+            nn.ReLU(True),
+            # state size. (ngf*2) x 16 x 16
+            nn.ConvTranspose2d(feature_map_dim * 2, feature_map_dim, 4, 2, 1,
+                               bias=False),
+            nn.BatchNorm2d(feature_map_dim),
+            nn.ReLU(True),
+            # state size. (ngf) x 32 x 32
+            nn.ConvTranspose2d(feature_map_dim, img_channels, 4, 2, 1,
+                               bias=False),
+            nn.Tanh()
+            # state size. (nc) x 64 x 64
+        )
+
+    def forward(self, input):
+        if len(input.size()) == 2:
+            input = input.unsqueeze(-1).unsqueeze(-1)
+        if input.is_cuda and self.ngpu > 1:
+            output = nn.parallel.data_parallel(self.main, input,
+                                               range(self.ngpu))
+        else:
+            output = self.main(input)
+        return output
+
+
 # =============================================================================
 # ================== Generator for 1 channel 28 x 28 images ===================
 # =============================================================================
