@@ -3,7 +3,6 @@
 # =============================================================================
 import torch
 import imageio
-import argparse
 import numpy as np
 import torch.nn as nn
 import matplotlib.pyplot as plt
@@ -107,59 +106,25 @@ def loss_monitor(per_batch_loss, name, args):
     plt.close()
 
 
-def initialize_weights(net):
-    for m in net.modules():
-        if isinstance(m, nn.Conv2d):
-            m.weight.data.normal_(0, 0.02)
-            m.bias.data.zero_()
-        elif isinstance(m, nn.ConvTranspose2d):
-            m.weight.data.normal_(0, 0.02)
-            m.bias.data.zero_()
-        elif isinstance(m, nn.Linear):
-            m.weight.data.normal_(0, 0.02)
-            m.bias.data.zero_()
+def weights_init(submodule):
+    """Initialize model's parameters."""
+    classname = submodule.__class__.__name__
+    if classname.find('Conv') != -1:
+        nn.init.normal_(submodule.weight, 0.0, 0.02)
+        if submodule.bias is not None:
+            nn.init.zeros_(submodule.bias)
+    elif classname.find('BatchNorm') != -1:
+        nn.init.normal_(submodule.weight, 1.0, 0.02)
+        if submodule.bias is not None:
+            nn.init.zeros_(submodule.bias)
 
-
-def parse_args():
-    """Parse command line arguments.
-
-    Returns
-    -------
-    args : :class:`argparse.Namespace`
-        Command line arguments.
-
-    """
-
-    pparser = argparse.ArgumentParser()
-    # device configuration
-    pparser.add_argument('--cuda', type=int, default=0,
-                         help='Which cuda to use.')
-    # model settings
-    pparser.add_argument('--z-dim', type=int, default=64, help='Noise dim.')
-    pparser.add_argument('--c-dim', type=int, default=10,
-                         help='Condition dim.')
-    # optimization settings
-    pparser.add_argument('--lr-d', type=float, default=2e-4,
-                         help='Discriminator learning rate.')
-    pparser.add_argument('--lr-g', type=float, default=2e-4,
-                         help='Generator learning rate.')
-    pparser.add_argument('--batch-size', type=int, default=64,
-                         help='Minibatch size')
-    pparser.add_argument('--epochs', type=int, default=50, help='Epochs')
-    pparser.add_argument('--d-steps', type=int, default=1,
-                         help='Train discriminator d steps every time.')
-    pparser.add_argument('--g-steps', type=int, default=1,
-                         help='Train generator g steps every time.')
-    pparser.add_argument('--beta1', type=float, default=0.5,
-                         help='Beta 1 of Adam.')
-    pparser.add_argument('--beta2', type=float, default=0.999,
-                         help='Beta 2 of Adam.')
-    # dataset settings
-    pparser.add_argument('--dataset', type=str, default='mnist',
-                         choices=['mnist', 'fashion-mnist', 'svhn', 'celeba',
-                                  'cifar10', 'stl10'], help='Dataset to use.')
-    args = pparser.parse_args()
-    args.device = 'cuda:{}'.format(args.cuda) \
-        if torch.cuda.is_available() else 'cpu'
-    print(args)
-    return args
+#     for m in net.modules():
+#         if isinstance(m, nn.Conv2d):
+#             m.weight.data.normal_(0, 0.02)
+#             m.bias.data.zero_()
+#         elif isinstance(m, nn.ConvTranspose2d):
+#             m.weight.data.normal_(0, 0.02)
+#             m.bias.data.zero_()
+#         elif isinstance(m, nn.Linear):
+#             m.weight.data.normal_(0, 0.02)
+#             m.bias.data.zero_()
