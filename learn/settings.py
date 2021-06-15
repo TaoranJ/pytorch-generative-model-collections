@@ -58,8 +58,6 @@ class GeneralArgParser(object):
                                  choices=['mnist', 'fashion-mnist', 'svhn',
                                           'celeba', 'cifar10', 'stl10'],
                                  help='Dataset to use.')
-        self.parser.add_argument('--dataroot', required=False,
-                                 help='path to dataset')
         self.parser.add_argument('--workers', type=int, default=2,
                                  help='Number of data loading workers')
         self.parser.add_argument('--classes', default='bedroom',
@@ -78,7 +76,7 @@ class GeneralArgParser(object):
         self.parser.add_argument('--z-dim', type=int, default=64,
                                  help='Size of latent vector.')
 
-    def parse_args(self):
+    def base_parse_args(self):
         """Parse command line arguments.
 
         Returns
@@ -96,14 +94,40 @@ class GeneralArgParser(object):
         # other settings
         args.device = 'cuda:{}'.format(args.cuda) \
             if torch.cuda.is_available() else 'cpu'
-        args.model_name = 'GAN'
+        if args.random_seed is None:
+            args.random_seed = random.randint(1, 10000)
+        return args
+
+    def setup_output_dir(self, args):
+        """Setup output directory.
+
+        Returns
+        -------
+        args : :class:`argparse.Namespace`
+            Command line arguments.
+
+        """
+
         args.eval_dir = 'eval_{}'.format(args.model_name)
         try:
             os.makedirs(args.eval_dir)
         except OSError:
             pass
-        if args.random_seed is None:
-            args.random_seed = random.randint(1, 10000)
+        return args
+
+    def parse_args(self):
+        """Parse command line arguments.
+
+        Returns
+        -------
+        args : :class:`argparse.Namespace`
+            Command line arguments.
+
+        """
+
+        args = self.base_parse_args()
+        args.model_name = 'GAN'
+        args = self.setup_output_dir(args)
         return args
 
 
@@ -131,15 +155,9 @@ class ArgParserCGAN(GeneralArgParser):
 
         """
 
-        args = super().parse_args()
+        args = super().base_parse_args()
         args.model_name = 'CGAN'
-        args.eval_dir = 'eval_{}'.format(args.model_name)
-        try:
-            os.makedirs(args.eval_dir)
-        except OSError:
-            pass
-        if args.manual_seed is None:
-            args.manual_seed = random.randint(1, 10000)
+        args = self.setup_output_dir(args)
         return args
 
 
@@ -169,13 +187,7 @@ class ArgParserDCGAN(GeneralArgParser):
 
         """
 
-        args = super().parse_args()
+        args = super().base_parse_args()
         args.model_name = 'DCGAN'
-        args.eval_dir = 'eval_{}'.format(args.model_name)
-        try:
-            os.makedirs(args.eval_dir)
-        except OSError:
-            pass
-        if args.random_seed is None:
-            args.random_seed = random.randint(1, 10000)
+        args = self.setup_output_dir(args)
         return args
