@@ -51,8 +51,7 @@ def train_gan(D, G, D_optimizer, G_optimizer, train_set, args):
     # loss function
     criterion = nn.BCELoss()
     # record loss for both discriminator and generator
-    per_batch_loss, per_epoch_loss = defaultdict(list), defaultdict(list)
-    per_batch_prob = defaultdict(list)
+    per_batch_loss, per_batch_prob = defaultdict(list), defaultdict(list)
 
     start_time = time.time()
     for epoch in range(1, args.epochs + 1):
@@ -102,8 +101,6 @@ def train_gan(D, G, D_optimizer, G_optimizer, train_set, args):
         # record loss
         cur_epoch_loss = {k: np.mean(v) for k, v in cur_epoch_loss.items()}
         cur_epoch_prob = {k: np.mean(v) for k, v in cur_epoch_prob.items()}
-        per_epoch_loss = {k: v + [cur_epoch_loss[k]]
-                          for k, v in cur_epoch_loss.items()}
         print('Epochs: {:03d}/{:03d}, Elapsed time: {}, '
               'D_loss/G_loss: {:.4f}/{:.4f}, D(x): {:.4f} '
               'D(G(z)): {:.4f}/{:.4f}'.format(
@@ -119,7 +116,6 @@ def train_gan(D, G, D_optimizer, G_optimizer, train_set, args):
                os.path.join(args.eval_dir, args.model_name + '.pt'))
     generate_animation('generator_result_animation', vis_imgs, args)
     loss_monitor(per_batch_loss, 'loss_vs_steps.png', args)
-    loss_monitor(per_epoch_loss, 'loss_vs_epochs.png', args)
     loss_monitor(per_batch_prob, 'prob_vs_steps.png', args)
     return D, G
 
