@@ -1,6 +1,7 @@
 # =============================================================================
 # ================================== Import ===================================
 # =============================================================================
+import os
 import time
 import torch
 import datetime
@@ -41,7 +42,7 @@ def train_gan(D, G, D_optimizer, G_optimizer, train_set, args):
 
     """
 
-    # test geneartor's capability every epoch
+    # test generator's capability every epoch
     vis_imgs = []
     fixed_z = torch.rand(args.batch_size, args.z_dim).to(args.device)
     # labels for real/fake images
@@ -51,6 +52,7 @@ def train_gan(D, G, D_optimizer, G_optimizer, train_set, args):
     criterion = nn.BCELoss()
     # record loss for both discriminator and generator
     per_batch_loss, per_epoch_loss = defaultdict(list), defaultdict(list)
+    per_batch_prob = defaultdict(list)
 
     start_time = time.time()
     for epoch in range(1, args.epochs + 1):
@@ -70,7 +72,8 @@ def train_gan(D, G, D_optimizer, G_optimizer, train_set, args):
             D_real_loss.backward()  # train with real imgs
             # noise -> generator -> fake imgs -> discriminator
             z = torch.rand((args.batch_size, args.z_dim)).to(args.device)
-            D_fake = D(G(z).detach())
+            fake_imgs = G(z)
+            D_fake = D(fake_imgs.detach())
             D_fake_loss = criterion(D_fake, y_fake)
             D_fake_loss.backward()  # train with fake imgs
             D_optimizer.step()  # only update discriminator
@@ -80,12 +83,13 @@ def train_gan(D, G, D_optimizer, G_optimizer, train_set, args):
             cur_epoch_loss['D_loss'].append(D_loss)
             cur_epoch_prob['D_x'].append(D_real.mean().item())
             cur_epoch_prob['D_G_z1'].append(D_fake.mean().item())
+            per_batch_prob['D_x'].append(D_real.mean().item())
+            per_batch_prob['D_G_z1'].append(D_fake.mean().item())
 
             # train generator
             G_optimizer.zero_grad()
             # z -> fake imgs -> discriminator
-            # z = torch.rand((args.batch_size, args.z_dim)).to(args.device)
-            D_fake = D(G(z))
+            D_fake = D(fake_imgs)
             G_loss = criterion(D_fake, y_real)
             G_loss.backward()
             G_optimizer.step()  # only update generator
@@ -93,10 +97,13 @@ def train_gan(D, G, D_optimizer, G_optimizer, train_set, args):
             per_batch_loss['G_loss'].append(G_loss.item())
             cur_epoch_loss['G_loss'].append(G_loss.item())
             cur_epoch_prob['D_G_z2'].append(D_fake.mean().item())
+            per_batch_prob['D_G_z2'].append(D_fake.mean().item())
 
         # record loss
         cur_epoch_loss = {k: np.mean(v) for k, v in cur_epoch_loss.items()}
         cur_epoch_prob = {k: np.mean(v) for k, v in cur_epoch_prob.items()}
+        per_epoch_loss = {k: v + [cur_epoch_loss[k]]
+                          for k, v in cur_epoch_loss.items()}
         print('Epochs: {:03d}/{:03d}, Elapsed time: {}, '
               'D_loss/G_loss: {:.4f}/{:.4f}, D(x): {:.4f} '
               'D(G(z)): {:.4f}/{:.4f}'.format(
@@ -108,10 +115,12 @@ def train_gan(D, G, D_optimizer, G_optimizer, train_set, args):
         vis_imgs.append(generator_vis(G, fixed_z))
 
     torch.save({'generator': G.state_dict(),
-                'discriminator': D.state_dict}, args.model_name + '.pt')
+                'discriminator': D.state_dict},
+               os.path.join(args.eval_dir, args.model_name + '.pt'))
     generate_animation('generator_result_animation', vis_imgs, args)
     loss_monitor(per_batch_loss, 'loss_vs_steps.png', args)
     loss_monitor(per_epoch_loss, 'loss_vs_epochs.png', args)
+    loss_monitor(per_batch_prob, 'prob_vs_steps.png', args)
     return D, G
 
 
