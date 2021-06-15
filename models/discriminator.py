@@ -5,44 +5,6 @@ import torch
 import torch.nn as nn
 
 
-class D_DCGAN(nn.Module):
-    def __init__(self, img_channels, feature_map_dim, ngpu):
-        super(D_DCGAN, self).__init__()
-        self.ngpu = ngpu
-        self.main = nn.Sequential(
-            # input is (nc) x 64 x 64
-            nn.Conv2d(img_channels, feature_map_dim, 4, 2, 1, bias=False),
-            nn.LeakyReLU(0.2, inplace=True),
-            # state size. (ndf) x 32 x 32
-            nn.Conv2d(feature_map_dim, feature_map_dim * 2, 4, 2, 1,
-                      bias=False),
-            nn.BatchNorm2d(feature_map_dim * 2),
-            nn.LeakyReLU(0.2, inplace=True),
-            # state size. (ndf*2) x 16 x 16
-            nn.Conv2d(feature_map_dim * 2, feature_map_dim * 4, 4, 2, 1,
-                      bias=False),
-            nn.BatchNorm2d(feature_map_dim * 4),
-            nn.LeakyReLU(0.2, inplace=True),
-            # state size. (ndf*4) x 8 x 8
-            nn.Conv2d(feature_map_dim * 4, feature_map_dim * 8, 4, 2, 1,
-                      bias=False),
-            nn.BatchNorm2d(feature_map_dim * 8),
-            nn.LeakyReLU(0.2, inplace=True),
-            # state size. (ndf*8) x 4 x 4
-            nn.Conv2d(feature_map_dim * 8, 1, 4, 1, 0, bias=False),
-            nn.Sigmoid()
-        )
-
-    def forward(self, input):
-        if input.is_cuda and self.ngpu > 1:
-            output = nn.parallel.data_parallel(self.main, input,
-                                               range(self.ngpu))
-        else:
-            output = self.main(input)
-
-        return output.view(-1, 1)
-
-
 # =============================================================================
 # ================ Discriminator for 1 channel 28 x 28 images =================
 # =============================================================================
@@ -260,3 +222,79 @@ class D_InfoGan_CGAN_3C32(D_InfoGan_3C32):
         x_ = torch.cat([x, c], 1)
         x_ = super().forward(x_)
         return x_
+
+
+# =============================================================================
+# ================ Discriminator for 3 channel 32 x 32 images =================
+# =============================================================================
+class D_DCGAN_3C64(nn.Module):
+    """Discriminator for the DCGAN. This generator is hardcoded to process
+    64 * 64 images. It could be easily expanded to 2^x * 2^x images by adding
+    or removing deconvolutional layers with increasing/decreasing
+    feature_map_dim * x.
+
+    Parameters
+    ----------
+    img_channels : int
+        In_channels of images.
+    feature_map_dim: int
+        Size of feature map in discriminator.
+    ngpu: int
+        Number of GPUs to use.
+
+    """
+    def __init__(self, img_channels, feature_map_dim, ngpu):
+        super(D_DCGAN_3C64, self).__init__()
+        self.ngpu = ngpu
+        self.discriminator = nn.Sequential(
+                # (batch, 3 -> feature_map_dim, 64 -> 32, 64 -> 32)
+                nn.Conv2d(in_channels=img_channels,
+                          out_channels=feature_map_dim,
+                          kernel_size=4, stride=2, padding=1, bias=False),
+                nn.LeakyReLU(0.2, inplace=True),
+                # (batch, feature_map_dim -> * 2, 32 -> 16, 32 -> 16)
+                nn.Conv2d(in_channels=feature_map_dim,
+                          out_channels=feature_map_dim * 2,
+                          kernel_size=4, stride=2, padding=1, bias=False),
+                nn.BatchNorm2d(feature_map_dim * 2),
+                nn.LeakyReLU(0.2, inplace=True),
+                # (batch, feature_map_dim * 2 -> * 4, 16 -> 8, 16 -> 8)
+                nn.Conv2d(in_channels=feature_map_dim * 2,
+                          out_channels=feature_map_dim * 4,
+                          kernel_size=4, stride=2, padding=1, bias=False),
+                nn.BatchNorm2d(feature_map_dim * 4),
+                nn.LeakyReLU(0.2, inplace=True),
+                # (batch, feature_map_dim * 4 -> * 8, 8 -> 4, 8 -> 4)
+                nn.Conv2d(in_channels=feature_map_dim * 4,
+                          out_channels=feature_map_dim * 8,
+                          kernel_size=4, stride=2, padding=1, bias=False),
+                nn.BatchNorm2d(feature_map_dim * 8),
+                nn.LeakyReLU(0.2, inplace=True),
+                # (batch, feature_map_dim * 8 -> 1, 4 -> 1, 4 -> 1)
+                nn.Conv2d(in_channels=feature_map_dim * 8,
+                          out_channels=1, kernel_size=4, stride=1, padding=0,
+                          bias=False),
+                nn.Sigmoid()
+        )
+
+    def forward(self, imgs):
+        """Forward propagation.
+
+        Parameters
+        ----------
+        imgs : :class:`torch.Tensor`
+            Images, a tensor of shape (batch_size, 3, 64, 64).
+
+        Returns
+        -------
+        pred : :class:`torch.Tensor`
+            Real/fake tensor of shape (batch_size, 1).
+
+        """
+
+        if imgs.is_cuda and self.ngpu > 1:
+            pred = nn.parallel.data_parallel(self.discriminator, imgs,
+                                             range(self.ngpu))
+        else:
+            pred = self.discriminator(imgs)
+        return pred.view(-1, 1)

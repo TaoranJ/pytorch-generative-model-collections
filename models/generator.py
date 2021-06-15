@@ -5,58 +5,6 @@ import torch
 import torch.nn as nn
 
 
-class G_DCGAN(nn.Module):
-    """Generator for the DCGAN.
-
-    Parameters
-    ----------
-    latent_dim : int
-        Length of latent vector.
-    feature_map_dim: int
-        Size of feature map in generator.
-    """
-    def __init__(self, latent_dim, feature_map_dim, img_channels, ngpu):
-        super(G_DCGAN, self).__init__()
-        self.ngpu = ngpu
-        self.main = nn.Sequential(
-            # input is Z, going into a convolution
-            nn.ConvTranspose2d(latent_dim, feature_map_dim * 8, 4, 1, 0,
-                               bias=False),
-            nn.BatchNorm2d(feature_map_dim * 8),
-            nn.ReLU(True),
-            # state size. (feature_map_dim * 8) x 4 x 4
-            nn.ConvTranspose2d(feature_map_dim * 8, feature_map_dim * 4, 4, 2,
-                               1, bias=False),
-            nn.BatchNorm2d(feature_map_dim * 4),
-            nn.ReLU(True),
-            # state size. (ngf*4) x 8 x 8
-            nn.ConvTranspose2d(feature_map_dim * 4, feature_map_dim * 2, 4, 2,
-                               1, bias=False),
-            nn.BatchNorm2d(feature_map_dim * 2),
-            nn.ReLU(True),
-            # state size. (ngf*2) x 16 x 16
-            nn.ConvTranspose2d(feature_map_dim * 2, feature_map_dim, 4, 2, 1,
-                               bias=False),
-            nn.BatchNorm2d(feature_map_dim),
-            nn.ReLU(True),
-            # state size. (ngf) x 32 x 32
-            nn.ConvTranspose2d(feature_map_dim, img_channels, 4, 2, 1,
-                               bias=False),
-            nn.Tanh()
-            # state size. (nc) x 64 x 64
-        )
-
-    def forward(self, input):
-        if len(input.size()) == 2:
-            input = input.unsqueeze(-1).unsqueeze(-1)
-        if input.is_cuda and self.ngpu > 1:
-            output = nn.parallel.data_parallel(self.main, input,
-                                               range(self.ngpu))
-        else:
-            output = self.main(input)
-        return output
-
-
 # =============================================================================
 # ================== Generator for 1 channel 28 x 28 images ===================
 # =============================================================================
@@ -276,3 +224,89 @@ class G_InfoGan_CGAN_3C32(G_InfoGan_3C32):
         x_ = torch.cat([x, c], 1)
         x_ = super().forward(x_)
         return x_
+
+
+# =============================================================================
+# ================= Generator for 3 channels 64 x 64 images ===================
+# =============================================================================
+class G_DCGAN_3C64(nn.Module):
+    """Generator for the DCGAN. This generator is hardcoded to generate 64 * 64
+    images. It could be easily expanded to 2^x * 2^x images by adding or
+    removing deconvolutional layers with increasing/decreasing
+    feature_map_dim * x.
+
+    Parameters
+    ----------
+    latent_dim : int
+        Length of latent vector.
+    feature_map_dim: int
+        Size of feature map in generator.
+    img_channels : int
+        In_channels of images.
+    ngpu: int
+        Number of GPUs to use.
+
+    """
+
+    def __init__(self, latent_dim, feature_map_dim, img_channels, ngpu):
+        super(G_DCGAN_3C64, self).__init__()
+        self.ngpu = ngpu
+        self.generator = nn.Sequential(
+                # (batch, latent_dim -> feature_map_dim * 8, 1 -> 4, 1 -> 4)
+                nn.ConvTranspose2d(in_channels=latent_dim,
+                                   out_channels=feature_map_dim * 8,
+                                   kernel_size=4, stride=1, padding=0,
+                                   bias=False),
+                nn.BatchNorm2d(feature_map_dim * 8), nn.ReLU(True),
+                # (batch, feature_map_dim * 8 -> * 4, 4 -> 8, 4 -> 8)
+                nn.ConvTranspose2d(in_channels=feature_map_dim * 8,
+                                   out_channels=feature_map_dim * 4,
+                                   kernel_size=4, stride=2, padding=1,
+                                   bias=False),
+                nn.BatchNorm2d(feature_map_dim * 4),
+                nn.ReLU(True),
+                # (batch, feature_map_dim * 4 -> * 2, 8 -> 16, 8 -> 16)
+                nn.ConvTranspose2d(in_channels=feature_map_dim * 4,
+                                   out_channels=feature_map_dim * 2,
+                                   kernel_size=4, stride=2, padding=1,
+                                   bias=False),
+                nn.BatchNorm2d(feature_map_dim * 2),
+                nn.ReLU(True),
+                # (batch, feature_map_dim * 2 -> * 1, 16 -> 32, 16 -> 32)
+                nn.ConvTranspose2d(in_channels=feature_map_dim * 2,
+                                   out_channels=feature_map_dim,
+                                   kernel_size=4, stride=2, padding=1,
+                                   bias=False),
+                nn.BatchNorm2d(feature_map_dim),
+                nn.ReLU(True),
+                # (batch, feature_map_dim -> img_channels, 32 -> 64, 32 -> 64)
+                nn.ConvTranspose2d(in_channels=feature_map_dim,
+                                   out_channels=img_channels,
+                                   kernel_size=4, stride=2, padding=1,
+                                   bias=False),
+                nn.Tanh()  # [-1, 1]
+        )
+
+    def forward(self, latent_vector):
+        """Forward propagation of the generator.
+
+        Parameters
+        ----------
+        latent_vector : :class:`torch.Tensor`
+            Sampled noise, a tensor of shape (batch, latent_dim).
+
+        Returns
+        -------
+        imgs : :class:`torch.Tensor`
+            Generated images, a tensor of shape (batch, channels, H, W).
+
+        """
+
+        if len(latent_vector.size()) == 2:  # vector_dim * 1 * 1 images
+            latent_vector = latent_vector.unsqueeze(-1).unsqueeze(-1)
+        if latent_vector.is_cuda and self.ngpu > 1:
+            imgs = nn.parallel.data_parallel(self.generator, latent_vector,
+                                             range(self.ngpu))
+        else:
+            imgs = self.generator(latent_vector)
+        return imgs
