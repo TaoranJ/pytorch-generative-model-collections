@@ -5,6 +5,7 @@ import os
 import torch
 import random
 import argparse
+from datetime import datetime
 
 
 # =============================================================================
@@ -108,7 +109,8 @@ class GeneralArgParser(object):
 
         """
 
-        args.eval_dir = 'eval_{}'.format(args.model_name)
+        args.eval_dir = 'eval_{}_{}'.format(args.model_name,
+                                            str(datetime.now()))
         try:
             os.makedirs(args.eval_dir)
         except OSError:
