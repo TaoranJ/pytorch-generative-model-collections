@@ -1,6 +1,7 @@
 # =============================================================================
 # ================================== Import ===================================
 # =============================================================================
+import os
 import torch
 import imageio
 import numpy as np
@@ -71,8 +72,9 @@ def generate_animation(name, imgs, args):
 
     """
 
-    imageio.mimwrite('_'.join([args.model_name, name + '.gif']), imgs,
-                     duration=0.5, loop=1)
+    imageio.mimwrite(os.path.join(args.eval_dir,
+                                  '_'.join([args.model_name, name + '.gif'])),
+                     imgs, duration=0.5, loop=1)
 
 
 def loss_monitor(per_batch_loss, name, args):
@@ -102,7 +104,7 @@ def loss_monitor(per_batch_loss, name, args):
     plt.grid(True)
     plt.tight_layout()
 
-    plt.savefig('_'.join([args.model_name, name]))
+    plt.savefig(os.path.join(args.eval_dir, '_'.join([args.model_name, name])))
     plt.close()
 
 

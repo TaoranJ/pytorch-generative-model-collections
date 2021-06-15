@@ -109,8 +109,8 @@ class GeneralArgParser(object):
 
         """
 
-        args.eval_dir = 'eval_{}_{}'.format(args.model_name,
-                                            str(datetime.now()))
+        args.eval_dir = 'eval_{}_{}'.format(
+                args.model_name, str(datetime.now()).replace(' ', '_'))
         try:
             os.makedirs(args.eval_dir)
         except OSError:
