@@ -110,8 +110,5 @@ def dataloader(batch_size, dataset_name, args):
             thv.datasets.STL10(datapath, split='test', download=True,
                                transform=transform3c),
             batch_size=batch_size, shuffle=True, drop_last=True)
-    if dataset_name in ['mnist', 'fashion-mnist']:
-        args.in_channels = 1
-    else:
-        args.in_channels = 3
+    args.img_channels = 1 if dataset_name in ['mnist', 'fashion-mnist'] else 3
     return tr_set, te_set
