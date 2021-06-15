@@ -77,11 +77,11 @@ def generate_animation(name, imgs, args):
                      imgs, duration=0.5, loop=1)
 
 
-def loss_monitor(per_batch_loss, name, args):
-    """Draw loss vs. steps figure.
+def loss_monitor(record, name, args):
+    """Draw record vs. steps figure.
 
-    per_batch_loss : :class:`collections.defaultdict`
-        Record of loss per batch.
+    record : :class:`collections.defaultdict`
+        Record per batch/epoch.
     name : str
         Figure name.
     args : :class:`argparse.Namespace`
@@ -89,16 +89,17 @@ def loss_monitor(per_batch_loss, name, args):
 
     """
 
-    x = range(len(per_batch_loss['D_loss']))
+    for key, value in record.items():
+        plt.plot(range(len(value)), value, label=key)
 
-    y1 = per_batch_loss['D_loss']
-    y2 = per_batch_loss['G_loss']
-
-    plt.plot(x, y1, label='D_loss')
-    plt.plot(x, y2, label='G_loss')
-
-    plt.xlabel('Steps')
-    plt.ylabel('Loss')
+    if 'step' in name:
+        plt.xlabel('Steps')
+    elif 'epoch' in name:
+        plt.xlabel('Epochs')
+    if 'loss' in name:
+        plt.ylabel('Loss')
+    elif 'prob' in name:
+        plt.ylabel('Probability')
 
     plt.legend(loc=2)
     plt.grid(True)
