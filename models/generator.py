@@ -227,9 +227,9 @@ class G_InfoGan_CGAN_3C32(G_InfoGan_3C32):
 
 
 # =============================================================================
-# ================= Generator for 3 channels 64 x 64 images ===================
+# ============================== 64 x 64 Images ===============================
 # =============================================================================
-class G_DCGAN_3C64(nn.Module):
+class G_DCGAN_64(nn.Module):
     """Generator for the DCGAN. This generator is hardcoded to generate 64 * 64
     images. It could be easily expanded to 2^x * 2^x images by adding or
     removing deconvolutional layers with increasing/decreasing
@@ -247,9 +247,8 @@ class G_DCGAN_3C64(nn.Module):
         Number of GPUs to use.
 
     """
-
     def __init__(self, latent_dim, feature_map_dim, img_channels, ngpu):
-        super(G_DCGAN_3C64, self).__init__()
+        super(G_DCGAN_64, self).__init__()
         self.ngpu = ngpu
         self.generator = nn.Sequential(
                 # (batch, latent_dim -> feature_map_dim * 8, 1 -> 4, 1 -> 4)
@@ -304,9 +303,5 @@ class G_DCGAN_3C64(nn.Module):
 
         if len(latent_vector.size()) == 2:  # vector_dim * 1 * 1 images
             latent_vector = latent_vector.unsqueeze(-1).unsqueeze(-1)
-        if latent_vector.is_cuda and self.ngpu > 1:
-            imgs = nn.parallel.data_parallel(self.generator, latent_vector,
-                                             range(self.ngpu))
-        else:
-            imgs = self.generator(latent_vector)
+        imgs = self.generator(latent_vector)
         return imgs

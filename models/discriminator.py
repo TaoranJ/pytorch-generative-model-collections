@@ -225,9 +225,9 @@ class D_InfoGan_CGAN_3C32(D_InfoGan_3C32):
 
 
 # =============================================================================
-# ================ Discriminator for 3 channel 32 x 32 images =================
+# ============================== 64 x 64 Images ===============================
 # =============================================================================
-class D_DCGAN_3C64(nn.Module):
+class D_DCGAN_64(nn.Module):
     """Discriminator for the DCGAN. This generator is hardcoded to process
     64 * 64 images. It could be easily expanded to 2^x * 2^x images by adding
     or removing deconvolutional layers with increasing/decreasing
@@ -244,10 +244,10 @@ class D_DCGAN_3C64(nn.Module):
 
     """
     def __init__(self, img_channels, feature_map_dim, ngpu):
-        super(D_DCGAN_3C64, self).__init__()
+        super(D_DCGAN_64, self).__init__()
         self.ngpu = ngpu
         self.discriminator = nn.Sequential(
-                # (batch, 3 -> feature_map_dim, 64 -> 32, 64 -> 32)
+                # (batch, img_channels -> feature_map_dim, 64 -> 32, 64 -> 32)
                 nn.Conv2d(in_channels=img_channels,
                           out_channels=feature_map_dim,
                           kernel_size=4, stride=2, padding=1, bias=False),
@@ -283,7 +283,7 @@ class D_DCGAN_3C64(nn.Module):
         Parameters
         ----------
         imgs : :class:`torch.Tensor`
-            Images, a tensor of shape (batch_size, 3, 64, 64).
+            Images, a tensor of shape (batch_size, img_channels, 64, 64).
 
         Returns
         -------
@@ -292,9 +292,5 @@ class D_DCGAN_3C64(nn.Module):
 
         """
 
-        if imgs.is_cuda and self.ngpu > 1:
-            pred = nn.parallel.data_parallel(self.discriminator, imgs,
-                                             range(self.ngpu))
-        else:
-            pred = self.discriminator(imgs)
+        pred = self.discriminator(imgs)
         return pred.view(-1, 1)

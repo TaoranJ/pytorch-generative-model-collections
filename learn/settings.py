@@ -93,8 +93,8 @@ class GeneralArgParser(object):
         self.model_settings()
         args = self.parser.parse_args()
         # other settings
-        args.device = 'cuda:{}'.format(args.cuda) \
-            if torch.cuda.is_available() else 'cpu'
+        args.device = torch.device('cpu' if args.cpu
+                                   else 'cuda:{}'.format(args.cuda))
         if args.random_seed is None:
             args.random_seed = random.randint(1, 10000)
         return args
