@@ -35,7 +35,7 @@ class GeneralArgParser(object):
         self.parser.add_argument('--lr-d', type=float, default=2e-4,
                                  help='Discriminator learning rate.')
 
-        self.parser.add_argument('--epochs', type=int, default=25,
+        self.parser.add_argument('--epochs', type=int, default=5,
                                  help='Number of epochs to train for.')
         self.parser.add_argument('--batch-size', type=int, default=64,
                                  help='Minibatch size')
