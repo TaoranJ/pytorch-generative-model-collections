@@ -58,13 +58,13 @@ class GeneralArgParser(object):
         self.parser.add_argument('--dataset', type=str, default='mnist',
                                  choices=['mnist', 'fashion-mnist', 'svhn',
                                           'celeba', 'cifar10', 'stl10',
-                                          'cifar100'],
+                                          'cifar100', 'fake', 'lsun'],
                                  help='Dataset to use.')
         self.parser.add_argument('--workers', type=int, default=2,
                                  help='Number of data loading workers')
-        self.parser.add_argument('--classes', default='bedroom',
+        self.parser.add_argument('--lusn-classes', default='bedroom',
                                  help='Comma separated list of classes for '
-                                      'the LSUN')
+                                      'the LSUN.')
         self.parser.add_argument('--random-seed', type=int,
                                  help='Random seed for reproducibility.')
         self.parser.add_argument('--img-size', type=int, default=64,
