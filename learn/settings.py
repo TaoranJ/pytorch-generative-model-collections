@@ -57,7 +57,8 @@ class GeneralArgParser(object):
 
         self.parser.add_argument('--dataset', type=str, default='mnist',
                                  choices=['mnist', 'fashion-mnist', 'svhn',
-                                          'celeba', 'cifar10', 'stl10'],
+                                          'celeba', 'cifar10', 'stl10',
+                                          'cifar100'],
                                  help='Dataset to use.')
         self.parser.add_argument('--workers', type=int, default=2,
                                  help='Number of data loading workers')
