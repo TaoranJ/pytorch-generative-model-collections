@@ -29,7 +29,7 @@ def train_gan(D, G, D_optimizer, G_optimizer, train_set, args):
     G_optimizer : :class:`torch.optim`
         Optimizer for generator.
     train_set : :class:`torch.utils.data.dataloader.DataLoader`
-        Training set.
+       Training set.
     args : :class:`argparse.Namespace`
         Argument parser.
 
@@ -44,7 +44,7 @@ def train_gan(D, G, D_optimizer, G_optimizer, train_set, args):
 
     # test generator's capability every epoch
     vis_imgs = []
-    fixed_z = torch.rand(args.batch_size, args.z_dim).to(args.device)
+    fixed_z = torch.rand(64, args.latent_dim).to(args.device)
     # labels for real/fake images
     y_real = torch.ones(args.batch_size, 1).to(args.device)
     y_fake = torch.zeros(args.batch_size, 1).to(args.device)
@@ -70,7 +70,7 @@ def train_gan(D, G, D_optimizer, G_optimizer, train_set, args):
             D_real_loss = criterion(D_real, y_real)
             D_real_loss.backward()  # train with real imgs
             # noise -> generator -> fake imgs -> discriminator
-            z = torch.rand((args.batch_size, args.z_dim)).to(args.device)
+            z = torch.rand((args.batch_size, args.latent_dim)).to(args.device)
             fake_imgs = G(z)
             D_fake = D(fake_imgs.detach())
             D_fake_loss = criterion(D_fake, y_fake)
