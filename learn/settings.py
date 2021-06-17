@@ -75,7 +75,7 @@ class GeneralArgParser(object):
     def model_settings(self):
         """Model related settings."""
 
-        self.parser.add_argument('--z-dim', type=int, default=64,
+        self.parser.add_argument('--latent-dim', type=int, default=64,
                                  help='Size of latent vector.')
 
     def base_parse_args(self):
