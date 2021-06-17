@@ -8,7 +8,7 @@ Examples
 .. code-block:: bash
 
    python dcgan.py --dataset celeba --epochs 5 --img-size 64 --img-resize
-   --batch-size 128 --z-dim 100 --random-seed 999
+   --batch-size 128 --latent-dim 100 --random-seed 999
 
 """
 
@@ -45,19 +45,16 @@ def main(args):
     torch.manual_seed(args.random_seed)
     cudnn.benchmark = True
     # datasets
-    tr_set, _ = dataloader(args.batch_size, args.dataset, args)
+    tr_set, _ = dataloader(args)
     # models
     D = D_DCGAN_64(img_channels=args.img_channels,
-                   feature_map_dim=args.d_fm_dim,
-                   ngpu=args.ngpu).to(args.device)
+                   feature_map_dim=args.d_fm_dim).to(args.device)
+    G = G_DCGAN_64(latent_dim=args.latent_dim, feature_map_dim=args.g_fm_dim,
+                   img_channels=args.img_channels).to(args.device)
     if (args.device.type == 'cuda') and (args.ngpu > 1):
         D = nn.DataParallel(D, list(range(args.ngpu)))
-    D.apply(weights_init)
-    G = G_DCGAN_64(latent_dim=args.z_dim, feature_map_dim=args.g_fm_dim,
-                   img_channels=args.img_channels,
-                   ngpu=args.ngpu).to(args.device)
-    if (args.device.type == 'cuda') and (args.ngpu > 1):
         G = nn.DataParallel(G, list(range(args.ngpu)))
+    D.apply(weights_init)
     G.apply(weights_init)
     # optimizers
     optimizerD = optim.Adam(D.parameters(), lr=args.lr_d,
