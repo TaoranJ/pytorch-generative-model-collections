@@ -146,7 +146,7 @@ class ArgParserCGAN(GeneralArgParser):
 
         # general settings
         self.parser.add_argument('--c-dim', type=int, default=10,
-                                 help='Size of condition vector. ')
+                                 help='Size of condition vector.')
 
     def parse_args(self):
         """Parse command line arguments.
