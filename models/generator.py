@@ -6,224 +6,207 @@ import torch.nn as nn
 
 
 # =============================================================================
-# ================== Generator for 1 channel 28 x 28 images ===================
+# ============================== 28 x 28 Images ===============================
 # =============================================================================
-class G_InfoGan_1C28(nn.Module):
+class G_InfoGan_28(nn.Module):
     """Generator used in InfoGAN paper for MNIST dataset. Can be also applied
-    to Fashion-MNIST dataset.
+    to other 28 * 28 image dataset.
 
     Parameters
     ----------
-    z_dim : int
-        Dimension for the noise.
+    latent_dim : int
+        Size of the latent vector.
     img_channels : int
-        # of channels of the images.
+        Number of channels of the images.
 
     """
-    def __init__(self, z_dim, img_channels):
-        super(G_InfoGan_1C28, self).__init__()
+    def __init__(self, latent_dim, img_channels):
+        super(G_InfoGan_28, self).__init__()
 
-        # fc 1: (batch_size, z_dim -> 1024)
-        self.fc1 = nn.Sequential(
-                nn.Linear(z_dim, 1024),
+        self.fc = nn.Sequential(
+                # (batch, latent_dim -> 1024)
+                nn.Linear(latent_dim, 1024),
                 nn.BatchNorm1d(1024),
-                nn.ReLU())
-        # fc 2: (batch_size, 1024 -> 7 * 7 * 128)
-        self.fc2 = nn.Sequential(
+                nn.ReLU(),
+                # (batch, 1024 -> 7 * 7 * 128)
                 nn.Linear(1024, 7 * 7 * 128),
                 nn.BatchNorm1d(7 * 7 * 128),
                 nn.ReLU())
-        # un-conv 1: (batch_size, 128 -> 64, 7 -> 14, 7 -> 14)
-        self.dconv1 = nn.Sequential(
+        self.dconv = nn.Sequential(
+                # (batch, 128 -> 64, 7 -> 14, 7 -> 14)
                 nn.ConvTranspose2d(in_channels=128, out_channels=64,
-                                   kernel_size=[4, 4], stride=2, padding=1),
+                                   kernel_size=4, stride=2, padding=1),
                 nn.BatchNorm2d(64),
-                nn.ReLU())
-        # un-conv 2: (batch_size, 128 -> 1, 14 -> 28, 14 -> 28)
-        self.dconv2 = nn.Sequential(
+                nn.ReLU(),
+                # (batch, 128 -> img_channels, 14 -> 28, 14 -> 28)
                 nn.ConvTranspose2d(in_channels=64, out_channels=img_channels,
                                    kernel_size=[4, 4], stride=2, padding=1),
                 nn.Tanh())  # Tanh [-1, 1] range of transformed images
 
-    def forward(self, x):
+    def forward(self, latent_vector):
         """Forward propagation.
 
         Parameters
         ----------
-        x : :class:`torch.Tensor`
-            Sampled noise, a tensor of shape (batch_size, z_dim).
+        latent_vector : :class:`torch.Tensor`
+            Sampled noise, a tensor of shape (batch, latent_dim).
 
         Returns
         -------
-        x : :class:`torch.Tensor`
-            Generated figures, a tensor of shape (batch_size, 1, 28, 28).
+        imgs : :class:`torch.Tensor`
+            Generated figures, a tensor of shape
+            (batch, img_channels, 28, 28).
 
         """
 
-        x = self.fc1(x)
-        x = self.fc2(x)
-        x = x.view(x.size(0), 128, 7, 7)
-        x = self.dconv1(x)
-        x = self.dconv2(x)
-        return x
+        feature_map = self.fc(latent_vector)
+        feature_map = feature_map.view(feature_map.size(0), 128, 7, 7)
+        imgs = self.dconv(feature_map)
+        return imgs
 
 
-class G_InfoGan_CGAN_1C28(G_InfoGan_1C28):
+class G_InfoGan_CGAN_28(G_InfoGan_28):
     """A CGAN compatible generator.
 
     Only need to add condition tensor to the first layer of the G_InfoGAN_1C28.
 
     Parameters
     ----------
-    z_dim : int
-        Dimension for the noise.
+    latent_dim : int
+        Size of the latent vector.
     img_channels : int
         # of in_channels of the images.
     c_dim : int
-        Condition dimension.
+        Size of condition vector.
 
     """
-    def __init__(self, z_dim, img_channels, c_dim):
-        super(G_InfoGan_CGAN_1C28, self).__init__(z_dim, img_channels)
+    def __init__(self, latent_dim, img_channels, c_dim):
+        super(G_InfoGan_CGAN_28, self).__init__(latent_dim + c_dim,
+                                                img_channels)
 
-        # fc 1: (batch_size, z_dim + c_dim -> 1024)
-        self.fc1 = nn.Sequential(
-                nn.Linear(z_dim + c_dim, 1024),
-                nn.BatchNorm1d(1024),
-                nn.ReLU())
-
-    def forward(self, x, c):
+    def forward(self, latent_vector, condition_vector):
         """Forward propagation.
 
         Parameters
         ----------
-        x : :class:`torch.Tensor`
-            Sampled noise, a tensor of shape (batch_size, z_dim).
+        latent_vector : :class:`torch.Tensor`
+            Sampled noise, a tensor of shape (batch, latent_dim).
+        condition_vector : :class:`torch.Tensor`
+            Sampled noise, a tensor of shape (batch, c_dim).
 
         Returns
         -------
-        x_ : :class:`torch.Tensor`
-            Generated figures, a tensor of shape (batch_size, 1, 28, 28).
+        imgs : :class:`torch.Tensor`
+            Generated figures, a tensor of shape (batch, img_channels, 28, 28).
 
         """
 
-        # (batch_size, z_dim + c_dim)
-        x_ = torch.cat([x, c], 1)
-        x_ = super().forward(x_)
-        return x_
+        # (batch, latent_dim + c_dim)
+        imgs = super().forward(torch.cat([latent_vector, condition_vector], 1))
+        return imgs
 
 
 # =============================================================================
-# ================= Generator for 3 channels 32 x 32 images ===================
+# ============================== 32 x 32 Images ===============================
 # =============================================================================
-class G_InfoGan_3C32(nn.Module):
-    """Generator used in InfoGAN paper for SVHN dataset.
+class G_InfoGan_32(nn.Module):
+    """Generator used in InfoGAN paper for SVHN dataset. Can be also applied to
+    other 32 x 32 images.
 
     Parameters
     ----------
-    z_dim : int
+    latent_dim : int
         Dimension for the noise.
     img_channels : int
-        # of in_channels of the images.
+        Number of in_channels of the images.
 
     """
-    def __init__(self, z_dim, img_channels):
-        super(G_InfoGan_3C32, self).__init__()
+    def __init__(self, latent_dim, img_channels):
+        super(G_InfoGan_32, self).__init__()
 
-        # fc 1: (batch_size, z_dim -> 2 * 2 * 448)
-        self.fc1 = nn.Sequential(
-                nn.Linear(z_dim, 2 * 2 * 448),
+        self.fc = nn.Sequential(
+                # (batch, latent_dim -> 2 * 2 * 448)
+                nn.Linear(latent_dim, 2 * 2 * 448),
                 nn.BatchNorm1d(2 * 2 * 448),
                 nn.ReLU())
-        # un-conv 1: (batch_size, 448 -> 256, 2 -> 4, 2 -> 4)
-        self.dconv1 = nn.Sequential(
+        self.dconv = nn.Sequential(
+                # (batch, 448 -> 256, 2 -> 4, 2 -> 4)
                 nn.ConvTranspose2d(in_channels=448, out_channels=256,
-                                   kernel_size=[4, 4], stride=2, padding=1),
-                nn.BatchNorm2d(256),
-                nn.ReLU())
-        # un-conv 2: (batch_size, 256 -> 128, 4 -> 8, 4 -> 8)
-        self.dconv2 = nn.Sequential(
+                                   kernel_size=4, stride=2, padding=1),
+                nn.BatchNorm2d(256), nn.ReLU(),
+                # (batch, 256 -> 128, 4 -> 8, 4 -> 8)
                 nn.ConvTranspose2d(in_channels=256, out_channels=128,
-                                   kernel_size=[4, 4], stride=2, padding=1),
-                nn.ReLU())
-        # un-conv 3: (batch_size, 128 -> 64, 8 -> 16, 8 -> 16)
-        self.dconv3 = nn.Sequential(
+                                   kernel_size=4, stride=2, padding=1),
+                nn.ReLU(),
+                # (batch, 128 -> 64, 8 -> 16, 8 -> 16)
                 nn.ConvTranspose2d(in_channels=128, out_channels=64,
-                                   kernel_size=[4, 4], stride=2, padding=1),
-                nn.ReLU())
-        # un-conv 4: (batch_size, 64 -> 3, 8 -> 32, 8 -> 32)
-        self.dconv4 = nn.Sequential(
-                nn.ConvTranspose2d(in_channels=64, out_channels=3,
-                                   kernel_size=[4, 4], stride=2, padding=1),
+                                   kernel_size=4, stride=2, padding=1),
+                nn.ReLU(),
+                # (batch, 64 -> 3, 8 -> 32, 8 -> 32)
+                nn.ConvTranspose2d(in_channels=64, out_channels=img_channels,
+                                   kernel_size=4, stride=2, padding=1),
                 nn.Tanh())
 
-    def forward(self, x):
+    def forward(self, latent_vector):
         """Forward propagation.
 
         Parameters
         ----------
-        x : :class:`torch.Tensor`
-            Sampled noise, a tensor of shape (batch_size, z_dim).
+        latent_vector : :class:`torch.Tensor`
+            Sampled noise, a tensor of shape (batch, latent_dim).
 
         Returns
         -------
-        x : :class:`torch.Tensor`
-            Generated images, a tensor of shape (batch_size, 3, 32, 32).
+        imgs : :class:`torch.Tensor`
+            Generated images, a tensor of shape (batch, img_channels, 32, 32).
 
         """
 
-        x = self.fc1(x)
-        x = x.view(x.size(0), 448, 2, 2)
-        x = self.dconv1(x)
-        x = self.dconv2(x)
-        x = self.dconv3(x)
-        x = self.dconv4(x)
-        return x
+        feature_map = self.fc(latent_vector)
+        feature_map = feature_map.view(feature_map.size(0), 448, 2, 2)
+        imgs = self.dconv(feature_map)
+        return imgs
 
 
-class G_InfoGan_CGAN_3C32(G_InfoGan_3C32):
+class G_InfoGan_CGAN_32(G_InfoGan_32):
     """A CGAN compatible generator.
 
     Only need to add condition tensor to the first layer of the G_InfoGAN_3C32.
 
     Parameters
     ----------
-    z_dim : int
-        Dimension for the noise.
+    latent_dim : int
+        Size of the latent vector.
     img_channels : int
-        # of in_channels of the images.
+        Number of in_channels of the images.
     c_dim : int
         Condition dimension.
 
     """
-    def __init__(self, z_dim, img_channels, c_dim):
-        super(G_InfoGan_CGAN_3C32, self).__init__(z_dim, img_channels)
+    def __init__(self, latent_dim, img_channels, c_dim):
+        super(G_InfoGan_CGAN_32, self).__init__(latent_dim + c_dim,
+                                                img_channels)
 
-        # fc 1: (batch_size, z_dim + condition_dim -> 2 * 2 * 448)
-        self.fc1 = nn.Sequential(
-                nn.Linear(z_dim + c_dim, 2 * 2 * 448),
-                nn.BatchNorm1d(2 * 2 * 448),
-                nn.ReLU())
-
-    def forward(self, x, c):
+    def forward(self, latent_vector, condition_vector):
         """Forward propagation.
 
         Parameters
         ----------
-        x : :class:`torch.Tensor`
-            Sampled noise, a tensor of shape (batch_size, z_dim).
+        latent_vector : :class:`torch.Tensor`
+            Sampled noise, a tensor of shape (batch, latent_dim).
+        condition_vector : :class:`torch.Tensor`
+            Sampled noise, a tensor of shape (batch, c_dim).
 
         Returns
         -------
-        x_ : :class:`torch.Tensor`
-            Generated images, a tensor of shape (batch_size, 3, 32, 32).
+        imgs : :class:`torch.Tensor`
+            Generated figures, a tensor of shape (batch, img_channels, 28, 28).
 
         """
 
-        # (batch_size, z_dim + c_dim)
-        x_ = torch.cat([x, c], 1)
-        x_ = super().forward(x_)
-        return x_
+        # (batch, latent_dim + c_dim)
+        imgs = super().forward(torch.cat([latent_vector, condition_vector], 1))
+        return imgs
 
 
 # =============================================================================
@@ -238,18 +221,15 @@ class G_DCGAN_64(nn.Module):
     Parameters
     ----------
     latent_dim : int
-        Length of latent vector.
+        Size of latent vector.
     feature_map_dim: int
         Size of feature map in generator.
     img_channels : int
         In_channels of images.
-    ngpu: int
-        Number of GPUs to use.
 
     """
-    def __init__(self, latent_dim, feature_map_dim, img_channels, ngpu):
+    def __init__(self, latent_dim, feature_map_dim, img_channels):
         super(G_DCGAN_64, self).__init__()
-        self.ngpu = ngpu
         self.generator = nn.Sequential(
                 # (batch, latent_dim -> feature_map_dim * 8, 1 -> 4, 1 -> 4)
                 nn.ConvTranspose2d(in_channels=latent_dim,
