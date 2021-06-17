@@ -12,7 +12,7 @@ from torch.utils.data import DataLoader
 # =============================================================================
 # ================================= Dataset ===================================
 # =============================================================================
-def dataloader(batch_size, dataset_name, args):
+def dataloader(args):
     """Return the dataloader for selected dataset.
     Now have:
     - MNIST
@@ -60,7 +60,7 @@ def dataloader(batch_size, dataset_name, args):
         transform1c = transforms.Compose([transforms.ToTensor(),
                                          transforms.Normalize((.5), (.5))])
     # create dataloaders
-    datapath = 'data'
+    datapath, dataset_name, batch_size = 'data', args.dataset, args.batch_size
     if dataset_name == 'mnist':  # handwritten digits, (1, 28, 28)
         tr_set = thv.datasets.MNIST(datapath, train=True, download=True,
                                     transform=transform1c)
@@ -117,4 +117,13 @@ def dataloader(batch_size, dataset_name, args):
     te_set = DataLoader(te_set, batch_size=batch_size, shuffle=True,
                         drop_last=True)
     args.img_channels = 1 if dataset_name in ['mnist', 'fashion-mnist'] else 3
+    if not args.img_resize:  # use original size
+        if dataset_name in ['mnist', 'fashion-mnist']:
+            args.img_size = 28
+        elif dataset_name in ['cifar10', 'cifar100', 'svhn']:
+            args.img_size = 32
+        elif dataset_name == 'celeba':
+            args.img_size = [218, 178]
+        elif dataset_name == 'stl10':
+            args.img_size = 96
     return tr_set, te_set
